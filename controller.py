@@ -4,7 +4,6 @@ from typing import Dict, Iterator, List, Tuple
 from clingcon import ClingconTheory
 from clingo import Control, Symbol
 from clingo.ast import ProgramBuilder, parse_string
-from clingo.symbol import Function, Number
 
 
 @dataclass
@@ -23,11 +22,12 @@ class Dimension:
 
 class Controller:
 
-    def __init__(self) -> None:
+    def __init__(self, files) -> None:
         prg = ""
 
-        with open("encoding.lp") as f:
-            prg = f.read()
+        for file_ in files:
+            with open(file_) as f:
+                prg += '\n' + f.read()
 
         self.__thy = ClingconTheory()
         self.__ctl = Control(['-n0'
@@ -38,16 +38,7 @@ class Controller:
         with ProgramBuilder(self.__ctl) as bld:
             parse_string(prg,lambda ast: self.__thy.rewrite_ast(ast,bld.add))
 
-    def solve(self, big_rect: Dimension, rect_dim:Dimension, on_model):
-        self.__rect_dim = rect_dim
-        # add input facts
-        with self.__ctl.backend() as backend:
-            atm_a = backend.add_atom(Function(name="big_rectangle", arguments=[Number(big_rect.width), Number(big_rect.height)]))
-            backend.add_rule([atm_a])
-            atm_a = backend.add_atom(Function(name="rect_dim", arguments=[Number(rect_dim.width), Number(rect_dim.height)]))
-            backend.add_rule([atm_a])
-
-
+    def solve(self, on_model):
         self.__ctl.ground([('base',[])])
         self.__thy.prepare(self.__ctl)
         last_symbols =[]
@@ -58,16 +49,21 @@ class Controller:
                 last_assignments = [(key,val) for key, val in self.__thy.assignment(mdl.thread_id)]
                 rects = self.createRectangles(last_symbols, last_assignments)
                 max_rects = next((s.arguments[0].number for s in last_symbols if s.name == "max_rects"), 0)
+                sym_big = next((s for s in last_symbols if s.name == "big_rectangle"))
+                big_rect = Rectangle(sym_big.arguments[0].number,
+                                     sym_big.arguments[1].number,
+                                     False, 0, 0)
+                on_model(rects, big_rect, max_rects)
 
-                on_model(rects, max_rects)
-
-    def __is_rotated(self, sym:Symbol):
-        return (self.__rect_dim.width, self.__rect_dim.height) == (sym.arguments[2].number, sym.arguments[1].number)
+    def __is_rotated(self, sym:Symbol, rotated_symbols: List[Symbol]):
+        id = sym.arguments[0].number
+        return next((sym for sym in rotated_symbols if sym.arguments[0].number == id), None) is not None
 
     def createRectangles(self, rect_symbols: List[Symbol], assigned_symbols: Iterator[Tuple[Symbol, int]]) -> Dict[int,Rectangle]:
+        rotated_symbols = [sym for sym in rect_symbols if sym.name == "is_rotated"]
         rects = {r.arguments[0].number: Rectangle(width=r.arguments[1].number,
                                                   height=r.arguments[2].number,
-                                                  isRotated=self.__is_rotated(r),
+                                                  isRotated=self.__is_rotated(r, rotated_symbols),
                                                   x_pos=0,
                                                   y_pos=0) for r in rect_symbols if r.name == "r"}
         for key, val in assigned_symbols:

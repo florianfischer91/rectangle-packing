@@ -4,17 +4,18 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 import controller as c
+import argparse
 
 plt.ion()
 fig, ax = plt.subplots()
 i = 1
 
-def on_model(rects: Dict[int,c.Rectangle], maxBoxes: int):
+def on_model(rects: Dict[int,c.Rectangle], big_rect: c.Rectangle, maxBoxes: int):
     #define Matplotlib figure and axis
     ax.clear()
     ax.plot()
     #add big rectangle to plot
-    ax.add_patch(Rectangle((0, 0), big_rect_width, big_rect_height, edgecolor='black', fill=False, lw=1))
+    ax.add_patch(Rectangle((0, 0), big_rect.width, big_rect.height, edgecolor='black', fill=False, lw=1))
     ax.set_aspect('equal', 'box')
     numRotated = 0
     #add rectangle to plot
@@ -35,17 +36,12 @@ def on_model(rects: Dict[int,c.Rectangle], maxBoxes: int):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-big_rect_height = 1500
-big_rect_width = 1300
-rect_dim_width = 223
-rect_dim_height = 247
-
-controller = c.Controller()
-controller.solve(c.Dimension(big_rect_width, big_rect_height),
-                 c.Dimension(rect_dim_width, rect_dim_height),
-                 on_model=on_model)
-
-
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('files', nargs='*', help="lp-files")
+    args = parser.parse_args()
+    controller = c.Controller(args.files)
+    controller.solve(on_model=on_model)
 
 
 

@@ -28,6 +28,8 @@ max_rects(N) :- N = (Width*Height) / (W*H), rect_dim(W,H), big_rectangle(Width, 
 % show statements
 #show r/3.
 #show max_rects/1.
+#show is_rotated(I) : r(I,H,W), rect_dim(W,H).
+#show big_rectangle/2.
 
 &show {x/1}.
 &show {y/1}.
