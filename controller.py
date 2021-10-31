@@ -4,7 +4,7 @@ from typing import Dict, Iterator, List, Tuple
 from clingcon import ClingconTheory
 from clingo import Control, Symbol
 from clingo.ast import ProgramBuilder, parse_string
-
+import time
 
 @dataclass
 class Rectangle:
@@ -44,7 +44,10 @@ class Controller:
         last_symbols =[]
         last_assignments = []
         with self.__ctl.solve(yield_=True) as hnd:
+            start = time.perf_counter_ns()
             for mdl in hnd:
+                stop = time.perf_counter_ns()
+                print(f"Elapsed time for model #{mdl.number}: {(stop-start)/1000000:0.2f} ms")
                 last_symbols = mdl.symbols(shown=True)
                 last_assignments = [(key,val) for key, val in self.__thy.assignment(mdl.thread_id)]
                 rects = self.createRectangles(last_symbols, last_assignments)
