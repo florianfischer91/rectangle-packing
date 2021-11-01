@@ -43,11 +43,12 @@ class Controller:
         self.__thy.prepare(self.__ctl)
         last_symbols =[]
         last_assignments = []
-        with self.__ctl.solve(yield_=True) as hnd:
+        with self.__ctl.solve(yield_=True, on_finish=lambda r: print(f"Solving process finished. SAT: {r.satisfiable}")) as hnd:
             start = time.perf_counter_ns()
+            old_stop = start
             for mdl in hnd:
                 stop = time.perf_counter_ns()
-                print(f"Elapsed time for model #{mdl.number}: {(stop-start)/1000000:0.2f} ms")
+                print(f"Elapsed time for model #{mdl.number}: {(stop-start)/1000000:0.2f} (+{(stop-old_stop)/1000000:0.2f}) ms, Optimal: {mdl.optimality_proven}")
                 last_symbols = mdl.symbols(shown=True)
                 last_assignments = [(key,val) for key, val in self.__thy.assignment(mdl.thread_id)]
                 rects = self.createRectangles(last_symbols, last_assignments)
@@ -57,6 +58,8 @@ class Controller:
                                      sym_big.arguments[1].number,
                                      False, 0, 0)
                 on_model(rects, big_rect, max_rects)
+                old_stop = stop
+        
 
     def __is_rotated(self, sym:Symbol, rotated_symbols: List[Symbol]):
         id = sym.arguments[0].number

@@ -7,4 +7,6 @@ Rectangle packing is a packing problem where the objective is to determine wheth
 
 ## identical rectangles in a given rectangle
 
+see [encoding.lp](encoding.lp)
+
 ## different rectangles in a given rectangle
